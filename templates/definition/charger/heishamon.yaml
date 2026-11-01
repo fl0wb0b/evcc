@@ -11,7 +11,7 @@ requirements:
     de: |
       Panasonic Aquarea Wärmepumpe über [HeishaMon](https://github.com/Egyras/HeishaMon) per MQTT.
 
-      Die Steuerung `sgready` nutzt die Optional-PCB-Emulation von HeishaMon. Dazu muss sie in HeishaMon aktiv sein, in der Wärmepumpe Optional PCB auf Yes stehen und die SG-Ready-Leistungsstufen eingestellt sein. Reißt die Verbindung zwischen HeishaMon und Wärmepumpe für ca. 40 s ab, meldet die Wärmepumpe H74 und geht in Standby.
+      Die Steuerung `sgready` nutzt die Optional-PCB-Emulation von HeishaMon. Dazu muss sie in HeishaMon aktiv sein, in der Wärmepumpe Optional PCB auf Yes stehen und die SG-Ready-Leistungsstufen eingestellt sein. Reißt die Verbindung zwischen HeishaMon und Wärmepumpe für ca. 40 s ab, meldet die Wärmepumpe H74 und geht in Standby. Die Bedarfsprognose richtet sich nach der Außentemperatur und benötigt eine konfigurierte Temperaturprognose.
 
       Die Steuerung `dhw` erzwingt die Warmwasserbereitung. Der Betriebsmodus der Wärmepumpe muss Warmwasser enthalten.
 
@@ -19,7 +19,7 @@ requirements:
     en: |
       Panasonic Aquarea heat pump via [HeishaMon](https://github.com/Egyras/HeishaMon) over MQTT.
 
-      The `sgready` control uses HeishaMon's optional PCB emulation. It must be enabled in HeishaMon, Optional PCB must be set to Yes in the heat pump and the SG Ready capacity levels must be configured. If the connection between HeishaMon and the heat pump drops for about 40 s, the heat pump raises H74 and goes to standby.
+      The `sgready` control uses HeishaMon's optional PCB emulation. It must be enabled in HeishaMon, Optional PCB must be set to Yes in the heat pump and the SG Ready capacity levels must be configured. If the connection between HeishaMon and the heat pump drops for about 40 s, the heat pump raises H74 and goes to standby. The demand forecast follows the outdoor temperature and requires a configured temperature forecast.
 
       The `dhw` control forces domestic hot water. The heat pump's operating mode must include hot water.
 
@@ -100,6 +100,7 @@ render: |
       source: mqtt
       {{- include "mqtt" . | indent 4 }}
       topic: {{ .topic }}/commands/SetSmartGridMode
+  predictor: ["demandtemperature"]
   {{- end }}
   {{- if or (eq .powersource "s0_1") (eq .powersource "s0_2") }}
   power:
