@@ -1,0 +1,133 @@
+template: heishamon
+products:
+  - brand: Panasonic
+    description:
+      generic: Aquarea (HeishaMon)
+capabilities: ["meter", "dim"]
+group: heating
+requirements:
+  evcc: ["skiptest"]
+  description:
+    de: |
+      Panasonic Aquarea Wärmepumpe über [HeishaMon](https://github.com/Egyras/HeishaMon) per MQTT.
+
+      Die Steuerung `sgready` nutzt die Optional-PCB-Emulation von HeishaMon. Dazu muss sie in HeishaMon aktiv sein, in der Wärmepumpe Optional PCB auf Yes stehen und die SG-Ready-Leistungsstufen eingestellt sein. Reißt die Verbindung zwischen HeishaMon und Wärmepumpe für ca. 40 s ab, meldet die Wärmepumpe H74 und geht in Standby.
+
+      Die Steuerung `dhw` erzwingt die Warmwasserbereitung. Der Betriebsmodus der Wärmepumpe muss Warmwasser enthalten.
+
+      Die Leistungswerte der Wärmepumpe sind ungenau. Genauer ist ein S0-Zähler am HeishaMon oder ein eigener Zähler am Ladepunkt, dann die Leistungsquelle leer lassen.
+    en: |
+      Panasonic Aquarea heat pump via [HeishaMon](https://github.com/Egyras/HeishaMon) over MQTT.
+
+      The `sgready` control uses HeishaMon's optional PCB emulation. It must be enabled in HeishaMon, Optional PCB must be set to Yes in the heat pump and the SG Ready capacity levels must be configured. If the connection between HeishaMon and the heat pump drops for about 40 s, the heat pump raises H74 and goes to standby.
+
+      The `dhw` control forces domestic hot water. The heat pump's operating mode must include hot water.
+
+      The heat pump's own power readings are inaccurate. An S0 meter on HeishaMon or a separate meter on the loadpoint is more accurate, leave the power source empty in that case.
+params:
+  - preset: mqtt
+  - name: topic
+    default: panasonic_heat_pump
+    description:
+      de: Basis-Topic von HeishaMon
+      en: HeishaMon base topic
+  - name: timeout
+    default: 10m
+    help:
+      de: Ab wann ein Messwert als veraltet gilt. HeishaMon sendet unveränderte Werte nur alle 5 min erneut
+      en: When a reading counts as stale. HeishaMon only resends unchanged values every 5 min
+  - name: control
+    type: choice
+    choice: ["sgready", "dhw"]
+    default: sgready
+    description:
+      de: Steuerung
+      en: Control
+    help:
+      de: SG Ready über die Optional-PCB-Emulation oder erzwungene Warmwasserbereitung
+      en: SG Ready via optional PCB emulation or forced domestic hot water
+  - name: boost
+    type: choice
+    choice: ["capacity1", "capacity2"]
+    default: capacity1
+    advanced: true
+    description:
+      de: Boost-Stufe
+      en: Boost level
+    help:
+      de: SG-Ready-Leistungsstufe bei Boost, nur für die Steuerung sgready
+      en: SG Ready capacity level for boost, sgready control only
+  - name: powersource
+    type: choice
+    choice: ["heatpump", "extra", "s0_1", "s0_2"]
+    description:
+      de: Leistungsquelle
+      en: Power source
+    help:
+      de: heatpump für die Werte der Wärmepumpe, extra für den Extra-Datenblock der K- und L-Serie, s0_1 und s0_2 für einen S0-Zähler am HeishaMon. Leer lassen, wenn ein eigener Zähler am Ladepunkt misst
+      en: heatpump for the heat pump's readings, extra for the extra data block of K and L series, s0_1 and s0_2 for an S0 meter on HeishaMon. Leave empty when a separate meter on the loadpoint measures
+  - name: tempsource
+    type: choice
+    choice: ["warmwater"]
+render: |
+  {{- if eq .control "dhw" }}
+  type: switchsocket
+  enabled:
+    source: mqtt
+    {{- include "mqtt" . | indent 2 }}
+    topic: {{ .topic }}/main/Force_DHW_State
+  enable:
+    source: mqtt
+    {{- include "mqtt" . | indent 2 }}
+    topic: {{ .topic }}/commands/SetForceDHW
+    payload: ${enable:%d}
+  {{- if .powersource }}
+  standbypower: 15
+  {{- else }}
+  standbypower: -1 # status from switch state, power from loadpoint meter
+  {{- end }}
+  features: ["switchdevice", "integrateddevice", "heating"]
+  icon: heatpump
+  {{- else }}
+  type: sgready
+  setmode:
+    source: map
+    values:
+      1: 2 # dim > HP/DHW off
+      2: 0 # normal
+      3: {{ if eq .boost "capacity2" }}3{{ else }}1{{ end }} # boost > capacity level
+    set:
+      source: mqtt
+      {{- include "mqtt" . | indent 4 }}
+      topic: {{ .topic }}/commands/SetSmartGridMode
+  {{- end }}
+  {{- if or (eq .powersource "s0_1") (eq .powersource "s0_2") }}
+  power:
+    source: mqtt
+    {{- include "mqtt" . | indent 2 }}
+    topic: {{ .topic }}/s0/Watt/{{ trimPrefix "s0_" .powersource }}
+  energy:
+    source: mqtt
+    {{- include "mqtt" . | indent 2 }}
+    topic: {{ .topic }}/s0/WatthourTotal/{{ trimPrefix "s0_" .powersource }}
+    scale: 0.001
+  {{- else if .powersource }}
+  power:
+    source: calc
+    add:
+    {{- range list "Heat" "Cool" "DHW" }}
+    - source: mqtt
+      {{- include "mqtt" $ | indent 4 }}
+      topic: {{ $.topic }}/{{ if eq $.powersource "extra" }}extra/{{ . }}_Power_Consumption_Extra{{ else }}main/{{ . }}_Power_Consumption{{ end }}
+    {{- end }}
+  {{- end }}
+  {{- if .tempsource }}
+  temp:
+    source: mqtt
+    {{- include "mqtt" . | indent 2 }}
+    topic: {{ .topic }}/main/DHW_Temp
+  limittemp:
+    source: mqtt
+    {{- include "mqtt" . | indent 2 }}
+    topic: {{ .topic }}/main/DHW_Target_Temp
+  {{- end }}
