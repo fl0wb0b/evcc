@@ -305,6 +305,33 @@ components:
         - loadpoints
         - forecast
         - vehicles
+    Absence:
+      description: Recurring time window the vehicle is expected to be away from home.
+      type: object
+      properties:
+        weekdays:
+          description: Days the absence starts, 0 is Sunday.
+          type: array
+          items:
+            type: number
+        from:
+          description: Start time, HH:MM.
+          type: string
+        to:
+          description: End time, HH:MM. Before the start time the absence ends on the following day.
+          type: string
+        tz:
+          description: Timezone in IANA format.
+          type: string
+        active:
+          description: The absence is considered.
+          type: boolean
+      required:
+        - weekdays
+        - from
+        - to
+        - tz
+        - active
     AlwaysCharge:
       description: Always charge state. Smart mode charges continuously at least at minimum power.
       type: string
@@ -1938,6 +1965,11 @@ components:
         planStrategy:
           $ref: "#/components/schemas/PlanStrategy"
           description: Charging plan strategy.
+        absences:
+          description: Recurring absences, the optimizer does not plan charging while the vehicle is away.
+          type: array
+          items:
+            $ref: "#/components/schemas/Absence"
         title:
           description: Vehicle title for UI display.
           type: string

@@ -105,6 +105,9 @@ const (
 	// repeating plans
 	RepeatingPlans = "repeatingPlans" // key to access all repeating plans in db
 
+	// absences
+	Absences = "absences" // recurring times the vehicle is away, vehicle settings only
+
 	// remote control
 	RemoteDisabled       = "remoteDisabled"       // remote disabled
 	RemoteDisabledSource = "remoteDisabledSource" // remote disabled source

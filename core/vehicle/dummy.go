@@ -82,3 +82,11 @@ func (v *dummy) GetPlanStrategy() api.PlanStrategy {
 func (v *dummy) SetPlanStrategy(strategy api.PlanStrategy) error {
 	return nil
 }
+
+func (v *dummy) GetAbsences() []api.Absence {
+	return nil
+}
+
+func (v *dummy) SetAbsences(absences []api.Absence) error {
+	return nil
+}

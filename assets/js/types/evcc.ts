@@ -1349,6 +1349,20 @@ export interface PlanStrategy {
   precondition: number;
 }
 
+/** Recurring time window the vehicle is expected to be away from home. */
+export interface Absence {
+  /** Days the absence starts, 0 is Sunday. */
+  weekdays: number[];
+  /** Start time, HH:MM. */
+  from: string;
+  /** End time, HH:MM. Before the start time the absence ends on the following day. */
+  to: string;
+  /** Timezone in IANA format. */
+  tz: string;
+  /** The absence is considered. */
+  active: boolean;
+}
+
 /** A configured vehicle. */
 export interface Vehicle {
   /** Unique vehicle name used in API routes and configuration. */
@@ -1367,6 +1381,8 @@ export interface Vehicle {
   repeatingPlans: RepeatingPlan[] | null;
   /** Charging plan strategy. */
   planStrategy: PlanStrategy;
+  /** Recurring absences, the optimizer does not plan charging while the vehicle is away. */
+  absences?: Absence[];
   /** Vehicle title for UI display. */
   title: string;
   /** Feature flags of the vehicle implementation. */

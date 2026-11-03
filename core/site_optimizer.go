@@ -18,6 +18,7 @@ import (
 	"github.com/evcc-io/evcc/core/loadpoint"
 	"github.com/evcc-io/evcc/core/metrics"
 	"github.com/evcc-io/evcc/core/types"
+	"github.com/evcc-io/evcc/core/vehicle"
 	"github.com/evcc-io/evcc/hems/hems"
 	"github.com/evcc-io/evcc/messenger"
 	"github.com/evcc-io/evcc/tariff"
@@ -1155,7 +1156,43 @@ func (site *Site) loadpointRequest(lp loadpoint.API, minLen int, firstSlotDurati
 		bat.PDemand = clearDemandWhenFull(prorate(demand, firstSlotDuration), bat.SMax-bat.SInitial)
 	}
 
+	if available := absenceAvailability(vehicle.Settings(site.log, v).GetAbsences(), timeSteps(minLen, time.Now()), time.Now()); available != nil {
+		bat.CAvailable = available
+		for i := range bat.PDemand {
+			if !available[i] {
+				bat.PDemand[i] = 0
+			}
+		}
+	}
+
 	return bat, detail
+}
+
+// absenceAvailability returns the slots the vehicle is expected at home, nil if it is never away.
+// The vehicle is connected now, so an absence that already started is not taken until it ends.
+func absenceAvailability(absences []api.Absence, dt []int, now time.Time) []bool {
+	away := func(t time.Time) bool {
+		return slices.ContainsFunc(absences, func(a api.Absence) bool { return a.Covers(t) })
+	}
+
+	res := make([]bool, len(dt))
+	ongoing := true
+	var anyAway bool
+
+	start := now
+	for i, d := range dt {
+		mid := start.Add(time.Duration(d) * time.Second / 2)
+		ongoing = ongoing && away(mid)
+		res[i] = ongoing || !away(mid)
+		anyAway = anyAway || !res[i]
+		start = start.Add(time.Duration(d) * time.Second)
+	}
+
+	if !anyAway {
+		return nil
+	}
+
+	return res
 }
 
 // circuitMaxImport returns the circuit's import limit from max power incl. HEMS limit and three-phase max current, 0 if unlimited
@@ -1579,6 +1616,10 @@ func coarsenHorizon(req *optimizer.OptimizationInput, details *requestDetails, a
 	for i := range req.Batteries {
 		b := &req.Batteries[i]
 		b.PDemand = sum(b.PDemand)
+		if b.CAvailable != nil {
+			// a group is available only if all of its slots are
+			b.CAvailable = lo.Map(starts, func(s, g int) bool { return !slices.Contains(b.CAvailable[s:ends[g]], false) })
+		}
 		if b.SGoal != nil {
 			// a goal ends its group, so it sits in the group's last slot
 			b.SGoal = lo.Map(starts, func(s, g int) float32 { return b.SGoal[ends[g]-1] })

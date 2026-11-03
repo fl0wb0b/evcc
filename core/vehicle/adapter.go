@@ -237,3 +237,32 @@ func (v *adapter) SetPlanStrategy(planStrategy api.PlanStrategy) error {
 
 	return nil
 }
+
+// GetAbsences returns the recurring absences
+func (v *adapter) GetAbsences() []api.Absence {
+	var res []api.Absence
+	if err := settings.Json(v.key()+keys.Absences, &res); err != nil {
+		return nil
+	}
+	return res
+}
+
+// SetAbsences stores the recurring absences
+func (v *adapter) SetAbsences(absences []api.Absence) error {
+	for _, a := range absences {
+		if err := a.Validate(); err != nil {
+			return err
+		}
+	}
+
+	if err := settings.SetJson(v.key()+keys.Absences, absences); err != nil {
+		return err
+	}
+
+	v.log.DEBUG.Printf("update absences for %s to: %v", v.name, absences)
+
+	v.publish()
+	v.requestUpdate()
+
+	return nil
+}

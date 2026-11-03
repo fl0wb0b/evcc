@@ -41,6 +41,20 @@ func (m *MockAPI) EXPECT() *MockAPIMockRecorder {
 	return m.recorder
 }
 
+// GetAbsences mocks base method.
+func (m *MockAPI) GetAbsences() []api.Absence {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAbsences")
+	ret0, _ := ret[0].([]api.Absence)
+	return ret0
+}
+
+// GetAbsences indicates an expected call of GetAbsences.
+func (mr *MockAPIMockRecorder) GetAbsences() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAbsences", reflect.TypeOf((*MockAPI)(nil).GetAbsences))
+}
+
 // GetAlwaysCharge mocks base method.
 func (m *MockAPI) GetAlwaysCharge() api.AlwaysCharge {
 	m.ctrl.T.Helper()
@@ -166,6 +180,20 @@ func (m *MockAPI) Name() string {
 func (mr *MockAPIMockRecorder) Name() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Name", reflect.TypeOf((*MockAPI)(nil).Name))
+}
+
+// SetAbsences mocks base method.
+func (m *MockAPI) SetAbsences(arg0 []api.Absence) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetAbsences", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetAbsences indicates an expected call of SetAbsences.
+func (mr *MockAPIMockRecorder) SetAbsences(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAbsences", reflect.TypeOf((*MockAPI)(nil).SetAbsences), arg0)
 }
 
 // SetAlwaysCharge mocks base method.

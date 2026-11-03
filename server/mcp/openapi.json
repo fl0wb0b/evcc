@@ -2477,6 +2477,49 @@
         }
       }
     },
+    "/vehicles/{name}/absences": {
+      "post": {
+        "operationId": "setVehicleAbsences",
+        "summary": "Set absences",
+        "description": "Replaces the recurring absences of the vehicle. The optimizer does not plan charging while the vehicle is expected away. An absence that already started when the vehicle is connected is ignored until it ends.",
+        "tags": [
+          "vehicles"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/vehicleName"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Absence"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Absence"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/db/backup": {
       "get": {
         "operationId": "downloadBackup",
@@ -5416,6 +5459,42 @@
           "active"
         ]
       },
+      "Absence": {
+        "description": "Recurring time window the vehicle is expected to be away from home.",
+        "type": "object",
+        "properties": {
+          "weekdays": {
+            "description": "Days the absence starts, 0 is Sunday.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "from": {
+            "description": "Start time, HH:MM.",
+            "type": "string"
+          },
+          "to": {
+            "description": "End time, HH:MM. Before the start time the absence ends on the following day.",
+            "type": "string"
+          },
+          "tz": {
+            "description": "Timezone in IANA format.",
+            "type": "string"
+          },
+          "active": {
+            "description": "The absence is considered.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "weekdays",
+          "from",
+          "to",
+          "tz",
+          "active"
+        ]
+      },
       "Vehicle": {
         "description": "A configured vehicle.",
         "type": "object",
@@ -5475,6 +5554,13 @@
           "planStrategy": {
             "$ref": "#/components/schemas/PlanStrategy",
             "description": "Charging plan strategy."
+          },
+          "absences": {
+            "description": "Recurring absences, the optimizer does not plan charging while the vehicle is away.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Absence"
+            }
           },
           "title": {
             "description": "Vehicle title for UI display.",
